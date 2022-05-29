@@ -39,7 +39,7 @@ public class ProductController {
 	}
 	
 	@PutMapping("/update/{id}")
-	public Mono<ProductDto> saveProduct(@RequestBody Mono<ProductDto> productObj,@PathVariable String id){
+	public Mono<ProductDto> updateProduct(@RequestBody Mono<ProductDto> productObj,@PathVariable String id){
 		return service.updateProduct(productObj, id);
 	}
 	
