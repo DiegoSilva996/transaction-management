@@ -1,9 +1,13 @@
 package com.nttdata.transactionmanagement.Controller;
 
+import java.util.Map;
+
 import com.nttdata.transactionmanagement.Dto.TransactionDto;
+import com.nttdata.transactionmanagement.Model.Transaction;
 import com.nttdata.transactionmanagement.Service.transactionService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +40,12 @@ public class TransactionController {
 	@PostMapping("/save")
 	public Mono<TransactionDto> saveTransaction(@RequestBody Mono<TransactionDto> TransactionObj){
 		return service.saveTransaction(TransactionObj);
+	}
+
+	//Microservicio para la creacion de transacciones con las reglas de negocio
+	@PostMapping("/createTransaction")
+	public ResponseEntity<Map<String, Object>> createTransaction(@RequestBody Transaction TransactionObj){
+		return service.createTransaction(TransactionObj);
 	}
 	
 	@PutMapping("/update/{id}")
