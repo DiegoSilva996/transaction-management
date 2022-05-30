@@ -34,5 +34,6 @@ public class Product {
     private List<String> owners;
     private List<String> authorizedSigner;   
     private Boolean hasDebt;
+    //Lista en posición 0 será la cuenta principal
     private List<String> associatedAccounts;
 }

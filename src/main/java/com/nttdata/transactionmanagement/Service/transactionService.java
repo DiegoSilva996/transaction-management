@@ -78,7 +78,7 @@ public class transactionService {
 
 	// Todas las cuentas bancarias tendrán un número máximo de transacciones (depósitos y retiros)
 	// Clase interna para validar si se cobrará comision
-	public HashMap<String, Object> validateNumberOfFeeTransactions(Product pro) {      
+	public HashMap<String, Object> validateNumberOfFreeTransactions(Product pro) {      
 		HashMap<String, Object> map = new HashMap<>();
 		List <Transaction> deposits = transactionRepository.findByTransactionTypeAndIdProduct("DEPOSIT",pro.getId());
 		List <Transaction> whitdrawall = transactionRepository.findByTransactionTypeAndIdProduct("BANK_WHITDRAWALL",pro.getId());
@@ -100,7 +100,7 @@ public class transactionService {
 
           //validar si será una transaccion con comision
           transaction.setFlagWithCommission(false);
-          HashMap<String, Object> validate = validateNumberOfFeeTransactions(product);
+          HashMap<String, Object> validate = validateNumberOfFreeTransactions(product);
           String use_comission = validate.get("use_comission").toString();
           Double value_comission = Double.parseDouble(validate.get("value_comission").toString());
           if(use_comission.equals("YES")){
@@ -163,6 +163,7 @@ public class transactionService {
   }
 
   //Clase interna para crear transaccion -> pago (PAYMENT)
+  //Un cliente puede hacer el pago de cualquier producto de crédito de terceros.
   public HashMap<String, Object> createPayment(@RequestBody Product product, Double amount, Transaction transaction  ){
     HashMap<String, Object> map = new HashMap<>();
     try{
@@ -212,9 +213,19 @@ public class transactionService {
     HashMap<String, Object> map = new HashMap<>();
     Double comission = 0.00;
     try{
+        Product aux = new Product();
+        //Si es tarjeta de debito, se usará el saldo de la cuenta principal 
+        if(product.getProductType().equals("DEBIT_CARD")){
+          //usar saldo de la cuenta principal
+          String principal_id = product.getAssociatedAccounts().get(0);
+          Mono <Product> op_destination = productRepository.findById(principal_id);          
+          aux  = (Product) op_destination.map(value -> { return value; }).subscribe();
+        }
+
         //validar si será una transaccion con comision
         transaction.setFlagWithCommission(false);
-        HashMap<String, Object> validate = validateNumberOfFeeTransactions(product);
+        HashMap<String, Object> validate =  product.getProductType().equals("DEBIT_CARD") ? validateNumberOfFreeTransactions(aux) : validateNumberOfFreeTransactions(product);
+                
         String use_comission = validate.get("use_comission").toString();
         Double value_comission = Double.parseDouble(validate.get("value_comission").toString());
         if(use_comission.equals("YES")){
@@ -223,7 +234,7 @@ public class transactionService {
           comission= value_comission;
         }
         //Validar el saldo para la transacción
-        Double current_amount = product.getAmount(); 
+        Double current_amount =product.getProductType().equals("DEBIT_CARD") ? aux.getAmount(): product.getAmount(); 
         Double new_amount = current_amount - amount - comission;
 
         if( new_amount < 0){
