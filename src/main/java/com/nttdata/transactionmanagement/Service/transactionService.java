@@ -465,19 +465,25 @@ public class transactionService {
   // id de la cuenta principal asociada a la tarjeta de debito de la billetera -> idAccount
   // monto de la cuenta principal ->accountAmount
   public HashMap<String, Object>  getDataByWallet(String phone){
+
+    log.info("entrando a método getDataByWallet");
+    log.info(phone);
     HashMap<String, Object> map = new HashMap<>();
     //data de la billetera
-    Mono <Product> walletMono = productRepository.findByPhoneNumber(phone);          
-    Product wallet  = (Product) walletMono.map(value -> { return value; }).subscribe();
+    //Mono <Product> walletMono = productRepository.findByPhoneNumber(phone);          
+    List<String> AssociatedAccounts  = productRepository.findByPhoneNumber(phone).block().getAssociatedAccounts(); //(Product) walletMono.map(value -> { return value; }).subscribe();
     //data de la cuenta
-    String idAccount = wallet.getAssociatedAccounts().get(0);
-    Mono <Product> accountMono = productRepository.findById(idAccount);          
-    Product account  = (Product) accountMono.map(value -> { return value; }).subscribe();
+    String idAccount = AssociatedAccounts.get(0);
+    //Mono <Product> accountMono = productRepository.findById(idAccount);          
+    //Product account  = productRepository.findById(idAccount); // (Product) accountMono.map(value -> { return value; }).subscribe();
     //armar hashmap
-    map.put("eWalletId", wallet.getId());
-    map.put("eWalletAmount", wallet.getAmount());
-    map.put("idAccount", account.getId());
-    map.put("accountAmount", account.getId());
+    map.put("eWalletId", productRepository.findByPhoneNumber(phone).block().getId());
+    map.put("eWalletAmount", productRepository.findByPhoneNumber(phone).block().getAmount());
+    //map.put("idAccount", account.getId());
+    //map.put("accountAmount", account.getId());
+    map.put("idAccount",productRepository.findById(idAccount).block().getId()  );       
+    map.put("accountAmount",productRepository.findById(idAccount).block().getAmount()  );
+        
     return map;
   }
 
@@ -496,13 +502,17 @@ public class transactionService {
 
 
   //public ResponseEntity<Map<String, Object>> transferByYanki(@RequestBody JSONObject new_trans){
-  public Mono  <Transaction> transferByYanki(@RequestBody JSONObject new_trans){  
+  //public Mono  <Transaction> transferByYanki(@RequestBody JSONObject new_trans){  
+    public Mono  <Transaction> transferByYanki(String phoneOrigin,  String phoneDestination,  Double amount){  
     log.info("entrando a método transferByYanki");
+    log.info(phoneOrigin);
+    log.info(phoneDestination);
+    
     Map<String, Object> salida = new HashMap<>();    
     //validar numeros de telefono
-    String phoneOrigin = new_trans.getString("phoneOrigin");
-    String phoneDestination = new_trans.getString("phoneDestination");
-    Double amount = new_trans.getDouble("amount");
+    //String phoneOrigin = new_trans.getString("phoneOrigin");
+    //String phoneDestination = new_trans.getString("phoneDestination");
+    //Double amount = new_trans.getDouble("amount");
     //String transactionType = new_trans.getString("transactionType");
 
     HashMap<String, Object> eWalletOrigin = getDataByWallet(phoneOrigin);  
@@ -510,16 +520,19 @@ public class transactionService {
     
     //validar que el ewallet tenga saldo suficiente para la transaccion 
     Double eWalletOriginAmount = (Double) eWalletOrigin.get("eWalletAmount");
+    Double eWalletDestinationAmount = (Double) eWalletDestination.get("eWalletAmount");
     if(eWalletOriginAmount - amount < 0 ){
       salida.put("message", "Saldo insuficiente");  
       return null;
 
     }else{
+      Double newAmount1 = eWalletOriginAmount - amount;
+      Double newAmount2 = eWalletDestinationAmount + amount;
       String idWalletOrigin = (String) eWalletOrigin.get("eWalletId");
       String idWalletDestination = (String) eWalletDestination.get("eWalletId");
       //Actualizar montos de cada ewallet
-      saveAmount(idWalletOrigin, 100.00).subscribe(id -> System.out.println("Update Product with id: " + id));
-      saveAmount(idWalletDestination, 100.00).subscribe(id -> System.out.println("Update Product with id: " + id));
+      saveAmount(idWalletOrigin, newAmount1).subscribe(id -> System.out.println("Update Product with id: " + id));
+      saveAmount(idWalletDestination, newAmount2).subscribe(id -> System.out.println("Update Product with id: " + id));
 
       //Registrar transacción
       java.util.Date date = new java.util.Date();

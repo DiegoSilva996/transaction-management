@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import reactor.core.publisher.Flux;
@@ -50,8 +51,9 @@ public class TransactionController {
 	}
 
 	@PostMapping("/createEWalletTransaction")
-	public Mono<Transaction> createEWalletTransaction(@RequestBody JSONObject new_trans){
-		return service.transferByYanki(new_trans);
+	//public Mono<Transaction> createEWalletTransaction(@RequestBody JSONObject new_trans){
+	public Mono<Transaction> createEWalletTransaction(@RequestParam String phoneOrigin,@RequestParam  String phoneDestination,@RequestParam  Double amount){		
+		return service.transferByYanki(phoneOrigin, phoneDestination,amount );
 	}
 	
 	@PutMapping("/update/{id}")
