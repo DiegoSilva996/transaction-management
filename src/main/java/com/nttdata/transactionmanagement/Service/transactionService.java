@@ -16,6 +16,7 @@ import com.nttdata.transactionmanagement.Repository.productRepository;
 import com.nttdata.transactionmanagement.Repository.transactionRepository;
 import com.nttdata.transactionmanagement.Util.AppUtils;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -374,7 +375,7 @@ public class transactionService {
           productRepository.save(product);
           //Actualizar cuenta de destino
 
-          Mono <Product> op_destination = productRepository.findById(transaction.getIdDestinationAccount());          
+          Mono <Product> op_destination = productRepository.findById(transaction.getIdDestinationProduct());          
           Product destination  = (Product) op_destination.map(value -> { return value; }).subscribe();
           Double New_amount_destination = destination.getAmount() + amount;
           destination.setAmount(New_amount_destination);
@@ -458,6 +459,82 @@ public class transactionService {
       return ResponseEntity.ok(salida);
   }
 
-  
+  //Clase interna para rertornar la siguiente info por billetera virtual: 
+  // id de la billetera -> eWalletId
+  // monto de la billetera -> eWalletAmount
+  // id de la cuenta principal asociada a la tarjeta de debito de la billetera -> idAccount
+  // monto de la cuenta principal ->accountAmount
+  public HashMap<String, Object>  getDataByWallet(String phone){
+    HashMap<String, Object> map = new HashMap<>();
+    //data de la billetera
+    Mono <Product> walletMono = productRepository.findByPhoneNumber(phone);          
+    Product wallet  = (Product) walletMono.map(value -> { return value; }).subscribe();
+    //data de la cuenta
+    String idAccount = wallet.getAssociatedAccounts().get(0);
+    Mono <Product> accountMono = productRepository.findById(idAccount);          
+    Product account  = (Product) accountMono.map(value -> { return value; }).subscribe();
+    //armar hashmap
+    map.put("eWalletId", wallet.getId());
+    map.put("eWalletAmount", wallet.getAmount());
+    map.put("idAccount", account.getId());
+    map.put("accountAmount", account.getId());
+    return map;
+  }
+
+
+  //Funciones con programción reactiva para actualizar montos  
+  public Mono<String> saveAmount(String id, Double amount) {
+    return productRepository.findById(id)
+            .map(pro -> transform(pro, amount))   
+            .flatMap(productRepository::save)          
+            .map(Product::getId);                       
+  }
+  private Product transform(Product toBeSaved, Double amount) {
+      toBeSaved.setAmount(amount);
+      return toBeSaved;
+  }
+
+
+  //public ResponseEntity<Map<String, Object>> transferByYanki(@RequestBody JSONObject new_trans){
+  public Mono  <Transaction> transferByYanki(@RequestBody JSONObject new_trans){  
+    log.info("entrando a método transferByYanki");
+    Map<String, Object> salida = new HashMap<>();    
+    //validar numeros de telefono
+    String phoneOrigin = new_trans.getString("phoneOrigin");
+    String phoneDestination = new_trans.getString("phoneDestination");
+    Double amount = new_trans.getDouble("amount");
+    //String transactionType = new_trans.getString("transactionType");
+
+    HashMap<String, Object> eWalletOrigin = getDataByWallet(phoneOrigin);  
+    HashMap<String, Object> eWalletDestination = getDataByWallet(phoneDestination);  
+    
+    //validar que el ewallet tenga saldo suficiente para la transaccion 
+    Double eWalletOriginAmount = (Double) eWalletOrigin.get("eWalletAmount");
+    if(eWalletOriginAmount - amount < 0 ){
+      salida.put("message", "Saldo insuficiente");  
+      return null;
+
+    }else{
+      String idWalletOrigin = (String) eWalletOrigin.get("eWalletId");
+      String idWalletDestination = (String) eWalletDestination.get("eWalletId");
+      //Actualizar montos de cada ewallet
+      saveAmount(idWalletOrigin, 100.00).subscribe(id -> System.out.println("Update Product with id: " + id));
+      saveAmount(idWalletDestination, 100.00).subscribe(id -> System.out.println("Update Product with id: " + id));
+
+      //Registrar transacción
+      java.util.Date date = new java.util.Date();
+      Transaction newTransaction = new Transaction();
+      newTransaction.setAmount(amount);
+      newTransaction.setIdProduct(idWalletOrigin);
+      newTransaction.setStatus("ACTIVE");
+      newTransaction.setRegisterDate(date);
+      newTransaction.setTransactionType("TRANSFER_BY_YANKEE");
+      newTransaction.setIdDestinationProduct(idWalletDestination);
+      return transactionRepository.save(newTransaction);
+    }
+
+ 
+  }
+
   
 }

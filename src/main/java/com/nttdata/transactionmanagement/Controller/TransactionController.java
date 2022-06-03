@@ -6,6 +6,7 @@ import com.nttdata.transactionmanagement.Dto.TransactionDto;
 import com.nttdata.transactionmanagement.Model.Transaction;
 import com.nttdata.transactionmanagement.Service.transactionService;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,6 +47,11 @@ public class TransactionController {
 	@PostMapping("/createTransaction")
 	public ResponseEntity<Map<String, Object>> createTransaction(@RequestBody Transaction TransactionObj){
 		return service.createTransaction(TransactionObj);
+	}
+
+	@PostMapping("/createEWalletTransaction")
+	public Mono<Transaction> createEWalletTransaction(@RequestBody JSONObject new_trans){
+		return service.transferByYanki(new_trans);
 	}
 	
 	@PutMapping("/update/{id}")

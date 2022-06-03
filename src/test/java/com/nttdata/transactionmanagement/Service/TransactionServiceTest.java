@@ -46,7 +46,7 @@ public class TransactionServiceTest {
 			.transactionType("DEPOSIT")
 			.status("ACTIVE")
 			.newDailyBalance(null)
-			.idDestinationAccount(null)
+			.idDestinationProduct(null)
 			.idCustomer(null)
 			.build();
 		transExample = trans1;
@@ -61,7 +61,7 @@ public class TransactionServiceTest {
 			.transactionType("BANK_WHITDRAWALL")
 			.status("ACTIVE")
 			.newDailyBalance(null)
-			.idDestinationAccount(null)
+			.idDestinationProduct(null)
 			.idCustomer(null)
 			.build();
 
@@ -75,7 +75,7 @@ public class TransactionServiceTest {
 			.transactionType("DEPOSIT")
 			.status("ACTIVE")
 			.newDailyBalance(null)
-			.idDestinationAccount(null)
+			.idDestinationProduct(null)
 			.idCustomer(null)
 			.build();
 
@@ -92,7 +92,7 @@ public class TransactionServiceTest {
 			.transactionType("DEPOSIT")
 			.status("ACTIVE")
 			.newDailyBalance(null)
-			.idDestinationAccount(null)
+			.idDestinationProduct(null)
 			.idCustomer(null)
 			.build();
     }

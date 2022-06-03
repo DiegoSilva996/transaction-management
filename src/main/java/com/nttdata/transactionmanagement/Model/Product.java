@@ -36,4 +36,9 @@ public class Product {
     private Boolean hasDebt;
     //Lista en posición 0 será la cuenta principal
     private List<String> associatedAccounts;
+    //eWallet
+    public String identificationCode;
+    public String phoneNumber;
+    public String IMEIPhone;
+    public String email;
 }

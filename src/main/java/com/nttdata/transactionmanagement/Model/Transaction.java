@@ -26,7 +26,7 @@ public class Transaction {
     private Double amount;
     private Double transactionCommission;
     private boolean flagWithCommission;
-    private String idDestinationAccount;
+    private String idDestinationProduct;
     private String transactionType;
     private String status;
     private Double newDailyBalance; 
