@@ -16,7 +16,6 @@ import com.nttdata.transactionmanagement.Repository.productRepository;
 import com.nttdata.transactionmanagement.Repository.transactionRepository;
 import com.nttdata.transactionmanagement.Util.AppUtils;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

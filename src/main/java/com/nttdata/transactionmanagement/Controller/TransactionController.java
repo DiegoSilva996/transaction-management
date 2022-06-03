@@ -6,7 +6,6 @@ import com.nttdata.transactionmanagement.Dto.TransactionDto;
 import com.nttdata.transactionmanagement.Model.Transaction;
 import com.nttdata.transactionmanagement.Service.transactionService;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
