@@ -31,4 +31,5 @@ public class Transaction {
     private String status;
     private Double newDailyBalance; 
     private String idCustomer;
+    private String operationStatus;
 }

@@ -54,6 +54,13 @@ public class TransactionController {
 	public Mono<Transaction> createEWalletTransaction(@RequestParam String phoneOrigin,@RequestParam  String phoneDestination,@RequestParam  Double amount){		
 		return service.transferByYanki(phoneOrigin, phoneDestination,amount );
 	}
+
+	@PostMapping("/createBootCoinTransaction")
+	//public Mono<Transaction> createEWalletTransaction(@RequestBody JSONObject new_trans){
+	public Mono<Transaction> createBootCoinTransaction(@RequestParam String origin,@RequestParam  String destination,
+	@RequestParam  Double amount, @RequestParam String paymentMethod){		
+		return service.transferBootCoin(origin, destination,amount, paymentMethod );
+	}
 	
 	@PutMapping("/update/{id}")
 	public Mono<TransactionDto> saveTransaction(@RequestBody Mono<TransactionDto> TransactionObj,@PathVariable String id){

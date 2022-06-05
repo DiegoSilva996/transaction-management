@@ -7,14 +7,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.nttdata.transactionmanagement.Dto.ProductDto;
 import com.nttdata.transactionmanagement.Dto.TransactionDto;
+import com.nttdata.transactionmanagement.Model.MasterValues;
 import com.nttdata.transactionmanagement.Model.Product;
 import com.nttdata.transactionmanagement.Model.Transaction;
+import com.nttdata.transactionmanagement.Producer.KafkaProducer;
 import com.nttdata.transactionmanagement.Repository.productRepository;
 import com.nttdata.transactionmanagement.Repository.transactionRepository;
 import com.nttdata.transactionmanagement.Util.AppUtils;
+import com.nttdata.transactionmanagement.api.MasterValuesApiClient;
+import com.nttdata.transactionmanagement.redis.model.MasterValuesCache;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +38,13 @@ public class transactionService {
 
 	@Autowired
 	private productRepository productRepository;
+
+  MasterValuesApiClient client; 
+
+  private masterValuesService service;
+
+  @Autowired
+  private KafkaProducer kafkaProducer;
 
   public Flux<TransactionDto> getAll(){
 		return transactionRepository.findAll().map(AppUtils::transactionEntitytoDto);
@@ -487,7 +499,7 @@ public class transactionService {
   }
 
 
-  //Funciones con programción reactiva para actualizar montos  
+  //Funciones con programación reactiva para actualizar montos  
   public Mono<String> saveAmount(String id, Double amount) {
     return productRepository.findById(id)
             .map(pro -> transform(pro, amount))   
@@ -502,7 +514,7 @@ public class transactionService {
 
   //public ResponseEntity<Map<String, Object>> transferByYanki(@RequestBody JSONObject new_trans){
   //public Mono  <Transaction> transferByYanki(@RequestBody JSONObject new_trans){  
-    public Mono  <Transaction> transferByYanki(String phoneOrigin,  String phoneDestination,  Double amount){  
+  public Mono  <Transaction> transferByYanki(String phoneOrigin,  String phoneDestination,  Double amount){  
     log.info("entrando a método transferByYanki");
     log.info(phoneOrigin);
     log.info(phoneDestination);
@@ -542,11 +554,67 @@ public class transactionService {
       newTransaction.setRegisterDate(date);
       newTransaction.setTransactionType("TRANSFER_BY_YANKEE");
       newTransaction.setIdDestinationProduct(idWalletDestination);
+      //enviar a kafka
+      kafkaProducer.publishMessage(String.valueOf(newTransaction));
+
       return transactionRepository.save(newTransaction);
     }
 
  
   }
 
+  
+  public Mono  <Transaction> transferBootCoin(String origin,  String destination,  Double amount, String paymentMethod) throws InterruptedException{  
+      log.info("entrando a método transferByYanki");
+      log.info(origin);
+      log.info(destination);
+
+      String IdProductOrigin = origin;
+      String IdProductDestination = destination;
+
+
+      if(paymentMethod.equals("TRANSFER_BY_YANKI")){
+        HashMap<String, Object> eWalletOrigin = getDataByWallet(origin);  
+        HashMap<String, Object> eWalletDestination = getDataByWallet(destination);  
+        IdProductOrigin =  (String) eWalletOrigin.get("eWalletId");
+        IdProductDestination = (String) eWalletDestination.get("eWalletId");
+      }
+
+      if (service.getAll().isEmpty()) {
+        service.storageMasterValueList(
+          client.getList()
+            .stream()
+            .map(MasterValuesCache::fromMVResponse)
+            .collect(Collectors.toList())
+        );
+      }
+
+      List<MasterValuesCache> masterValues =  service.getAll();
+      MasterValuesCache purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
+      MasterValuesCache sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
+
+      Transaction newTransaction = new Transaction();
+
+  
+        //Registrar transacción
+        java.util.Date date = new java.util.Date();
+        newTransaction.setAmount(amount);
+        newTransaction.setIdProduct(IdProductOrigin);
+        newTransaction.setStatus("ACTIVE");
+        newTransaction.setRegisterDate(date);
+        newTransaction.setTransactionType("BOOTCOIN_TRANSFER");
+        newTransaction.setIdDestinationProduct(IdProductDestination);
+        newTransaction.setOperationStatus("IN_PROCESS");
+
+
+        //enviar a kafka
+        kafkaProducer.publishMessage(String.valueOf(newTransaction)+"%%"+ purschaseRate.getValue() + "%%"+ sellingeRate.getValue());
+  
+        return transactionRepository.save(newTransaction);
+      }
+  
+   
+    
+  
   
 }
