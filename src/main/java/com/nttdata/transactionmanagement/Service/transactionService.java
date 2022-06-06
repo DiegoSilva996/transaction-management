@@ -508,20 +508,12 @@ public class transactionService {
   }
 
 
-  //public ResponseEntity<Map<String, Object>> transferByYanki(@RequestBody JSONObject new_trans){
-  //public Mono  <Transaction> transferByYanki(@RequestBody JSONObject new_trans){  
   public Mono  <Transaction> transferByYanki(String phoneOrigin,  String phoneDestination,  Double amount){  
     log.info("entrando a método transferByYanki");
     log.info(phoneOrigin);
     log.info(phoneDestination);
     
     Map<String, Object> salida = new HashMap<>();    
-    //validar numeros de telefono
-    //String phoneOrigin = new_trans.getString("phoneOrigin");
-    //String phoneDestination = new_trans.getString("phoneDestination");
-    //Double amount = new_trans.getDouble("amount");
-    //String transactionType = new_trans.getString("transactionType");
-
     HashMap<String, Object> eWalletOrigin = getDataByWallet(phoneOrigin);  
     HashMap<String, Object> eWalletDestination = getDataByWallet(phoneDestination);  
 
@@ -535,8 +527,8 @@ public class transactionService {
     }else{
       Double newAmount1 = eWalletOriginAmount - amount;
       Double newAmount2 = eWalletDestinationAmount + amount;
-      String idWalletOrigin = (String) eWalletOrigin.get("eWalletId");
-      String idWalletDestination = (String) eWalletDestination.get("eWalletId");
+      String idWalletOrigin = eWalletOrigin.get("eWalletId").toString();
+      String idWalletDestination = eWalletDestination.get("eWalletId").toString();
       //Actualizar montos de cada ewallet
       saveAmount(idWalletOrigin, newAmount1).subscribe(id -> System.out.println("Update Product with id: " + id));
       saveAmount(idWalletDestination, newAmount2).subscribe(id -> System.out.println("Update Product with id: " + id));
@@ -560,7 +552,7 @@ public class transactionService {
   }
 
   
-  public Mono  <Transaction> transferBootCoin(String origin,  String destination,  Double amount, String paymentMethod) throws InterruptedException{  
+  public Transaction transferBootCoin(String origin,  String destination,  Double amount, String paymentMethod) throws InterruptedException{  
       log.info("entrando a método transferByYanki");
       log.info(origin);
       log.info(destination);
@@ -573,10 +565,8 @@ public class transactionService {
         log.info("entró a if "+ paymentMethod );
         HashMap<String, Object> eWalletOrigin = getDataByWallet(origin);  
         HashMap<String, Object> eWalletDestination = getDataByWallet(destination);  
-        log.info("gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         log.info(eWalletOrigin.toString());
         log.info(eWalletDestination.toString());
-        log.info(" fin del  gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
         IdProductOrigin =  eWalletOrigin.get("eWalletId").toString();
         IdProductDestination = eWalletDestination.get("eWalletId").toString();
@@ -584,25 +574,7 @@ public class transactionService {
         log.info(IdProductDestination);
       }
 
-      log.info("antes del if");
-
-      // if (service.getAll().isEmpty()) {
-      //   log.info("servicio es vacio");
-      //   service.storageMasterValueList(
-      //     client.getList()
-      //       .stream()
-      //       .map(MasterValuesCache::fromMVResponse)
-      //       .map(AppUtils::masterValuesCacheToMasterValues)
-      //       .collect(Collectors.toList())
-      //   );
-      // }
-
-      // log.info("fuera del if");
-      // List<MasterValues> masterValues =  service.getAll();
-      // MasterValues purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
-      // MasterValues sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
-
-      Transaction newTransaction = new Transaction();
+        Transaction newTransaction = new Transaction();
 
   
         //Registrar transacción
@@ -616,13 +588,18 @@ public class transactionService {
         newTransaction.setOperationStatus("IN_PROCESS");
 
 
+
+
+        //Registrar transaccion
+        Transaction newTRa= transactionRepository.save(newTransaction).block();
+        String id = newTRa.getId();  //flatMap(u -> u.get_id()).toString();
         //enviar a kafka
-        //kafkaProducer.publishMessage(String.valueOf(newTransaction)+"%%2.50%%2.45");
-        String concatValues = newTransaction.getAmount().toString() + "%%" + newTransaction.getIdProduct() +"%%"+ newTransaction.getIdDestinationProduct()+"%%2.50%%2.45";
+        String concatValues = id + "%%" +newTransaction.getAmount().toString() + "%%" + newTransaction.getIdProduct() +"%%"+ newTransaction.getIdDestinationProduct()+"%%2.50%%2.45";
         kafkaProducer.publishMessage(concatValues);
         log.info("transaction final");
         log.info(String.valueOf(concatValues));
-        return transactionRepository.save(newTransaction);
+
+        return newTRa; //transactionRepository.save(newTransaction);
       }
   
    
