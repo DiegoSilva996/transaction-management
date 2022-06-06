@@ -58,7 +58,7 @@ public class TransactionController {
 	@PostMapping("/createBootCoinTransaction")
 	//public Mono<Transaction> createEWalletTransaction(@RequestBody JSONObject new_trans){
 	public Mono<Transaction> createBootCoinTransaction(@RequestParam String origin,@RequestParam  String destination,
-	@RequestParam  Double amount, @RequestParam String paymentMethod){		
+	@RequestParam  Double amount, @RequestParam String paymentMethod) throws InterruptedException{		
 		return service.transferBootCoin(origin, destination,amount, paymentMethod );
 	}
 	

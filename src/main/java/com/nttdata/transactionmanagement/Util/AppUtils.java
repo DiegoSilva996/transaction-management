@@ -2,8 +2,10 @@ package com.nttdata.transactionmanagement.Util;
 
 import com.nttdata.transactionmanagement.Dto.ProductDto;
 import com.nttdata.transactionmanagement.Dto.TransactionDto;
+import com.nttdata.transactionmanagement.Model.MasterValues;
 import com.nttdata.transactionmanagement.Model.Product;
 import com.nttdata.transactionmanagement.Model.Transaction;
+import com.nttdata.transactionmanagement.redis.model.MasterValuesCache;
 
 import org.springframework.beans.BeanUtils;
 
@@ -25,10 +27,22 @@ public class AppUtils {
 		BeanUtils.copyProperties(trans, transactionDto);
 		return transactionDto;
 	}
-	
-	public static Transaction DtoTotransactionEntity(TransactionDto transactionDto) {
-		Transaction trans =new Transaction();
-		BeanUtils.copyProperties(transactionDto, trans);
-		return trans;
+	public static Transaction DtoTotransactionEntity(TransactionDto transdto) {
+		Transaction transaction=new Transaction();
+		BeanUtils.copyProperties(transdto, transaction);
+		return transaction;
 	}
+	
+	public static MasterValuesCache masterValuesToMasterValuesCache(MasterValues masterValues) {
+		MasterValuesCache mvc =new MasterValuesCache();
+		BeanUtils.copyProperties(masterValues, mvc);
+		return mvc;
+	}
+
+	public static MasterValues masterValuesCacheToMasterValues(MasterValuesCache masterValuesCache) {
+		MasterValues mv =new MasterValues();
+		BeanUtils.copyProperties(masterValuesCache, mv);
+		return mv;
+	}
+	
 }

@@ -585,13 +585,14 @@ public class transactionService {
           client.getList()
             .stream()
             .map(MasterValuesCache::fromMVResponse)
+            .map(AppUtils::masterValuesCacheToMasterValues)
             .collect(Collectors.toList())
         );
       }
 
-      List<MasterValuesCache> masterValues =  service.getAll();
-      MasterValuesCache purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
-      MasterValuesCache sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
+      List<MasterValues> masterValues =  service.getAll();
+      MasterValues purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
+      MasterValues sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
 
       Transaction newTransaction = new Transaction();
 
