@@ -7,7 +7,7 @@ spring:
   cloud:
     config:
       enabled: true
-      uri: http://localhost:8081
+      uri: http://localhost:8087
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -20,11 +20,6 @@ spring:
   redis:
     host: localhost
     port: 6379
-
-server:
-  port : 8070
-
-
 eureka:
   client:
     service-url:
