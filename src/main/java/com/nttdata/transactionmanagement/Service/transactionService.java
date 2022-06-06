@@ -480,21 +480,17 @@ public class transactionService {
     log.info("entrando a método getDataByWallet");
     log.info(phone);
     HashMap<String, Object> map = new HashMap<>();
-    //data de la billetera
-    //Mono <Product> walletMono = productRepository.findByPhoneNumber(phone);          
-    List<String> AssociatedAccounts  = productRepository.findByPhoneNumber(phone).block().getAssociatedAccounts(); //(Product) walletMono.map(value -> { return value; }).subscribe();
+    //data de la billetera        
+    List<String> AssociatedAccounts  = productRepository.findByPhoneNumber(phone).block().getAssociatedAccounts(); 
     //data de la cuenta
     String idAccount = AssociatedAccounts.get(0);
-    //Mono <Product> accountMono = productRepository.findById(idAccount);          
-    //Product account  = productRepository.findById(idAccount); // (Product) accountMono.map(value -> { return value; }).subscribe();
-    //armar hashmap
     map.put("eWalletId", productRepository.findByPhoneNumber(phone).block().getId());
     map.put("eWalletAmount", productRepository.findByPhoneNumber(phone).block().getAmount());
-    //map.put("idAccount", account.getId());
-    //map.put("accountAmount", account.getId());
     map.put("idAccount",productRepository.findById(idAccount).block().getId()  );       
     map.put("accountAmount",productRepository.findById(idAccount).block().getAmount()  );
-        
+    log.info(productRepository.findByPhoneNumber(phone).block().getId());
+    log.info(productRepository.findById(idAccount).block().getId()  ); 
+    log.info("salida de método getDataByWallet");
     return map;
   }
 
@@ -528,7 +524,7 @@ public class transactionService {
 
     HashMap<String, Object> eWalletOrigin = getDataByWallet(phoneOrigin);  
     HashMap<String, Object> eWalletDestination = getDataByWallet(phoneDestination);  
-    
+
     //validar que el ewallet tenga saldo suficiente para la transaccion 
     Double eWalletOriginAmount = (Double) eWalletOrigin.get("eWalletAmount");
     Double eWalletDestinationAmount = (Double) eWalletDestination.get("eWalletAmount");
@@ -574,25 +570,37 @@ public class transactionService {
 
 
       if(paymentMethod.equals("TRANSFER_BY_YANKI")){
+        log.info("entró a if "+ paymentMethod );
         HashMap<String, Object> eWalletOrigin = getDataByWallet(origin);  
         HashMap<String, Object> eWalletDestination = getDataByWallet(destination);  
-        IdProductOrigin =  (String) eWalletOrigin.get("eWalletId");
-        IdProductDestination = (String) eWalletDestination.get("eWalletId");
+        log.info("gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        log.info(eWalletOrigin.toString());
+        log.info(eWalletDestination.toString());
+        log.info(" fin del  gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+        IdProductOrigin =  eWalletOrigin.get("eWalletId").toString();
+        IdProductDestination = eWalletDestination.get("eWalletId").toString();
+        log.info(IdProductOrigin );
+        log.info(IdProductDestination);
       }
 
-      if (service.getAll().isEmpty()) {
-        service.storageMasterValueList(
-          client.getList()
-            .stream()
-            .map(MasterValuesCache::fromMVResponse)
-            .map(AppUtils::masterValuesCacheToMasterValues)
-            .collect(Collectors.toList())
-        );
-      }
+      log.info("antes del if");
 
-      List<MasterValues> masterValues =  service.getAll();
-      MasterValues purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
-      MasterValues sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
+      // if (service.getAll().isEmpty()) {
+      //   log.info("servicio es vacio");
+      //   service.storageMasterValueList(
+      //     client.getList()
+      //       .stream()
+      //       .map(MasterValuesCache::fromMVResponse)
+      //       .map(AppUtils::masterValuesCacheToMasterValues)
+      //       .collect(Collectors.toList())
+      //   );
+      // }
+
+      // log.info("fuera del if");
+      // List<MasterValues> masterValues =  service.getAll();
+      // MasterValues purschaseRate = masterValues.stream().filter(m -> "PURCHASE_RATE".equals(m.getCode())).findAny().orElse(null);
+      // MasterValues sellingeRate = masterValues.stream().filter(m -> "SELLING_RATE".equals(m.getCode())).findAny().orElse(null);
 
       Transaction newTransaction = new Transaction();
 
@@ -609,8 +617,11 @@ public class transactionService {
 
 
         //enviar a kafka
-        kafkaProducer.publishMessage(String.valueOf(newTransaction)+"%%"+ purschaseRate.getValue() + "%%"+ sellingeRate.getValue());
-  
+        //kafkaProducer.publishMessage(String.valueOf(newTransaction)+"%%2.50%%2.45");
+        String concatValues = newTransaction.getAmount().toString() + "%%" + newTransaction.getIdProduct() +"%%"+ newTransaction.getIdDestinationProduct()+"%%2.50%%2.45";
+        kafkaProducer.publishMessage(concatValues);
+        log.info("transaction final");
+        log.info(String.valueOf(concatValues));
         return transactionRepository.save(newTransaction);
       }
   
