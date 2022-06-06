@@ -26,21 +26,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class transactionService {
   @Autowired
   private transactionRepository transactionRepository; 
 
 	@Autowired
 	private productRepository productRepository;
+  @Autowired
+  private final MasterValuesApiClient client; 
 
-  MasterValuesApiClient client; 
-
+  @Autowired
   private masterValuesService service;
 
   @Autowired
@@ -543,7 +546,7 @@ public class transactionService {
       newTransaction.setTransactionType("TRANSFER_BY_YANKEE");
       newTransaction.setIdDestinationProduct(idWalletDestination);
       //enviar a kafka
-      kafkaProducer.publishMessage(String.valueOf(newTransaction));
+      //kafkaProducer.publishMessage(String.valueOf(newTransaction));
 
       return transactionRepository.save(newTransaction);
     }
@@ -559,6 +562,22 @@ public class transactionService {
 
       String IdProductOrigin = origin;
       String IdProductDestination = destination;
+
+      //consultar valores en bdcache
+      if (service.getAll().isEmpty()) {
+        service.storageMasterValueList(
+          client.getList()
+            .stream()
+            .collect(Collectors.toList())
+        );
+      }
+      List<MasterValues> lista = service.getAll();
+
+      //Obtener tasas de compra y venta de bootcoin 
+      MasterValues ratePurchase = lista.stream().filter(mv -> mv.getStatus().equals("ACTIVE") &&  "PURCHASE_RATE".equals(mv.getCode())).findAny().orElse(null);
+      MasterValues rateSelling = lista.stream().filter(mv -> mv.getStatus().equals("ACTIVE") && "SELLING_RATE".equals(mv.getCode())).findAny().orElse(null);
+      String val1 = String.valueOf(ratePurchase.getValue());
+      String val2 = String.valueOf(rateSelling.getValue());
 
 
       if(paymentMethod.equals("TRANSFER_BY_YANKI")){
@@ -592,9 +611,10 @@ public class transactionService {
 
         //Registrar transaccion
         Transaction newTRa= transactionRepository.save(newTransaction).block();
-        String id = newTRa.getId();  //flatMap(u -> u.get_id()).toString();
+        String id = newTRa.getId();  
         //enviar a kafka
-        String concatValues = id + "%%" +newTransaction.getAmount().toString() + "%%" + newTransaction.getIdProduct() +"%%"+ newTransaction.getIdDestinationProduct()+"%%2.50%%2.45";
+        String concatValues = id + "%%" +newTransaction.getAmount().toString() + "%%" + newTransaction.getIdProduct() +"%%"+
+        newTransaction.getIdDestinationProduct()+"%%" +val1 + "%%" +   val2;
         kafkaProducer.publishMessage(concatValues);
         log.info("transaction final");
         log.info(String.valueOf(concatValues));

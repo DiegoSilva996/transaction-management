@@ -53,4 +53,4 @@ kafka:
   topic:
     name: transaction-request
 product-api:
-  base-url: http://localhost:8081
+  base-url: http://localhost:8080
