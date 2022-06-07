@@ -35,14 +35,14 @@ resilience4j:
         slow-call-rate-threshold: 50
         slow-call-duration-threshold: 2s
     instances:
-      createCircuit:
+      createTransactionCircuit:
         base-config: default 
   timelimiter:
    configs:
     default:
       timeout-duration: 2s
    instances:
-      createTime:
+      createTransactionTime:
         base-config: default
 kafka:
   topic:
